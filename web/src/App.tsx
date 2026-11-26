@@ -15,8 +15,10 @@ interface Forecast {
   rating: string;
   conditions: string[];
   temperature_c: number;
+  relative_humidity_percent: number;
   precipitation_probability_percent: number;
   wind_speed_kmh: number;
+  wind_gusts_kmh: number;
 }
 
 interface ClubSuggestion {
@@ -387,7 +389,7 @@ function App() {
             </button>
           </form>
           <p className="search-guidance">
-            Escribe al menos 3 letras y selecciona el resultado correcto. Ej.: «Padel Barcelona» o «Club X, Sabadell».
+            Escribe al menos 3 letras. Solo aparecen lugares cuyo nombre incluye «padel» o «pádel»; añade también la localidad para afinar.
           </p>
           {(searchStatus || suggestionsLoading || suggestionsError ||
             (suggestionsOpen && suggestions.length === 0 && query.trim().length >= 3)) && (
@@ -396,7 +398,7 @@ function App() {
                 searchStatus ||
                 (suggestionsLoading
                   ? "Buscando sugerencias…"
-                  : "No hay coincidencias. Añade la localidad o prueba la búsqueda por texto.")}
+                  : "No hay coincidencias con «padel» o «pádel» en el nombre. Prueba con el nombre del club y su localidad.")}
             </p>
           )}
           {clubs.length > 0 && (
@@ -456,10 +458,25 @@ function App() {
               {forecastStatus}
             </p>
             {forecasts.length > 0 && (
+              <>
+              <section className={`recommendation-panel tone-${recommendationTone(forecasts[0], courtType)}`} aria-label="Mejor hora según la previsión">
+                <div className="recommendation-copy">
+                  <span className="recommendation-kicker">MEJOR HORA SEGÚN LA PREVISIÓN</span>
+                  <h3>{forecasts[0].time}<span> · {courtType === "indoor" ? "Pista indoor" : "Pista outdoor"}</span></h3>
+                  <p>{recommendationText(forecasts[0], courtType)}</p>
+                </div>
+                <span className="recommendation-badge">{recommendationLabel(forecasts[0], courtType)}</span>
+                <div className="recommendation-metrics">
+                  <span className={`metric-chip ${temperatureTone(forecasts[0].temperature_c, courtType)}`}><strong>{Math.round(forecasts[0].temperature_c)}°C</strong><small>{courtType === "indoor" ? "temperatura exterior · interior no medido" : "temperatura · ideal 15–22°"}</small></span>
+                  <span className={`metric-chip ${windTone(Math.max(forecasts[0].wind_speed_kmh, forecasts[0].wind_gusts_kmh), courtType)}`}><strong>{Math.round(forecasts[0].wind_speed_kmh)} km/h</strong><small>{courtType === "indoor" ? "viento exterior · impacto menor" : `viento · rachas ${Math.round(forecasts[0].wind_gusts_kmh)} km/h`}</small></span>
+                  <span className={`metric-chip ${rainTone(forecasts[0].precipitation_probability_percent, courtType)}`}><strong>{Math.round(forecasts[0].precipitation_probability_percent)}%</strong><small>{courtType === "indoor" ? "lluvia exterior · impacto menor" : "probabilidad de lluvia"}</small></span>
+                  {courtType === "outdoor" && <span className={`metric-chip ${humidityTone(forecasts[0].relative_humidity_percent)}`}><strong>{Math.round(forecasts[0].relative_humidity_percent)}%</strong><small>humedad relativa</small></span>}
+                </div>
+              </section>
               <div className="forecast-grid">
                 {forecasts.map((forecast) => (
                   <button
-                    className={`forecast-card${selectedTime === forecast.time ? " is-selected" : ""}`}
+                    className={`forecast-card tone-${recommendationTone(forecast, courtType)}${selectedTime === forecast.time ? " is-selected" : ""}`}
                     type="button"
                     key={forecast.time}
                     aria-pressed={selectedTime === forecast.time}
@@ -469,26 +486,23 @@ function App() {
                       setForecastStatus(`Has seleccionado las ${forecast.time} como hora de referencia.`);
                     }}
                   >
-                    <div className="forecast-time">
-                      <strong>{forecast.time}</strong><span>{forecast.score}/100</span>
-                    </div>
-                    <div className="forecast-score">ÍNDICE METEOROLÓGICO</div>
-                    <p className={`forecast-rating${forecast.score < 70 ? " is-warning" : ""}`}>
-                      {forecast.rating}
-                    </p>
+                    <div className="forecast-time"><strong>{forecast.time}</strong><span className="mini-level">{recommendationLabel(forecast, courtType)}</span></div>
+                    <p className="forecast-rating">{forecast.rating}</p>
                     <div className="weather-metrics">
-                      <span>🌡 {Math.round(forecast.temperature_c)} °C</span>
-                      <span>↗ {Math.round(forecast.wind_speed_kmh)} km/h</span>
-                      <span>☂ {Math.round(forecast.precipitation_probability_percent)} %</span>
+                      <span className={temperatureTone(forecast.temperature_c, courtType)}>🌡 {Math.round(forecast.temperature_c)} °C</span>
+                      <span className={windTone(Math.max(forecast.wind_speed_kmh, forecast.wind_gusts_kmh), courtType)}>↗ {Math.round(forecast.wind_speed_kmh)} km/h · rachas {Math.round(forecast.wind_gusts_kmh)}</span>
+                      <span className={rainTone(forecast.precipitation_probability_percent, courtType)}>☂ {Math.round(forecast.precipitation_probability_percent)} %</span>
+                      {courtType === "outdoor" && <span className={humidityTone(forecast.relative_humidity_percent)}>💧 {Math.round(forecast.relative_humidity_percent)} %</span>}
                     </div>
                     <p className="forecast-conditions">{forecast.conditions.join(" · ")}</p>
                   </button>
                 ))}
               </div>
+              </>
             )}
             <div className="availability-note">
               <span className="note-icon" aria-hidden="true">i</span>
-              <p><strong>Una buena previsión no confirma una pista libre.</strong> Elige una hora como referencia; la disponibilidad no está conectada a ningún sistema de reservas.</p>
+              <p><strong>La previsión no mide el estado real de la pista.</strong> No confirma que el césped esté seco, la arena repartida, la iluminación sea adecuada ni que haya pista libre. En indoor, tampoco describe las condiciones dentro del recinto.</p>
             </div>
           </section>
         )}
@@ -608,8 +622,10 @@ function parseForecastsPayload(value: unknown): { forecasts: Forecast[] } {
       !Array.isArray(forecast.conditions) ||
       !forecast.conditions.every((condition) => typeof condition === "string") ||
       typeof forecast.temperature_c !== "number" ||
+      typeof forecast.relative_humidity_percent !== "number" ||
       typeof forecast.precipitation_probability_percent !== "number" ||
-      typeof forecast.wind_speed_kmh !== "number"
+      typeof forecast.wind_speed_kmh !== "number" ||
+      typeof forecast.wind_gusts_kmh !== "number"
     ) {
       throw new Error("La respuesta contiene una previsión con datos no válidos.");
     }
@@ -619,11 +635,68 @@ function parseForecastsPayload(value: unknown): { forecasts: Forecast[] } {
       rating: forecast.rating,
       conditions: forecast.conditions,
       temperature_c: forecast.temperature_c,
+      relative_humidity_percent: forecast.relative_humidity_percent,
       precipitation_probability_percent: forecast.precipitation_probability_percent,
       wind_speed_kmh: forecast.wind_speed_kmh,
+      wind_gusts_kmh: forecast.wind_gusts_kmh,
     };
   });
   return { forecasts };
+}
+
+type RecommendationTone = "good" | "caution" | "poor" | "neutral";
+
+function recommendationTone(forecast: Forecast, court: CourtType): RecommendationTone {
+  if (court === "indoor") return "neutral";
+  if (
+    forecast.precipitation_probability_percent >= 40 ||
+    forecast.wind_speed_kmh >= 25 ||
+    forecast.score < 45 ||
+    forecast.relative_humidity_percent >= 85
+  ) return "poor";
+  if (
+    forecast.temperature_c >= 15 && forecast.temperature_c <= 22 &&
+    forecast.wind_speed_kmh < 15 && forecast.precipitation_probability_percent < 20 &&
+    forecast.relative_humidity_percent < 75
+  ) return "good";
+  return "caution";
+}
+
+function recommendationLabel(forecast: Forecast, court: CourtType): string {
+  const tone = recommendationTone(forecast, court);
+  if (tone === "neutral") return "Tiempo exterior no penaliza";
+  if (tone === "good") return "Muy recomendable";
+  if (tone === "poor") return "Mejor buscar otra hora";
+  return "Con algún factor a tener en cuenta";
+}
+
+function recommendationText(forecast: Forecast, court: CourtType): string {
+  if (court === "indoor") return "El tiempo exterior afecta menos a la pista cubierta; esta previsión no mide la temperatura ni el estado dentro del recinto.";
+  if (recommendationTone(forecast, court) === "good") return "Temperatura templada, poco viento y baja probabilidad de lluvia.";
+  if (forecast.conditions.length && !forecast.conditions.includes("Condiciones favorables")) {
+    return `Revisa: ${forecast.conditions.join(" y ").toLowerCase()}.`;
+  }
+  if (recommendationTone(forecast, court) === "caution") return "Hay algún valor fuera del rango ideal; revisa los indicadores antes de elegir.";
+  return "La previsión es favorable, aunque conviene comprobar el estado real de la pista.";
+}
+
+function temperatureTone(value: number, court: CourtType): string {
+  if (court === "indoor") return "metric-neutral";
+  return value >= 15 && value <= 22 ? "metric-good" : value < 10 || value > 28 ? "metric-poor" : "metric-caution";
+}
+
+function windTone(value: number, court: CourtType): string {
+  if (court === "indoor") return "metric-neutral";
+  return value < 15 ? "metric-good" : value < 25 ? "metric-caution" : "metric-poor";
+}
+
+function rainTone(value: number, court: CourtType): string {
+  if (court === "indoor") return "metric-neutral";
+  return value < 20 ? "metric-good" : value < 40 ? "metric-caution" : "metric-poor";
+}
+
+function humidityTone(value: number): string {
+  return value < 60 ? "metric-good" : value < 75 ? "metric-caution" : "metric-poor";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

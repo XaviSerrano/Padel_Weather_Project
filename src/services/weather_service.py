@@ -26,6 +26,7 @@ class WeatherService:
         fields = {
             "time": hourly.get("time"),
             "temperature": hourly.get("temperature_2m"),
+            "humidity": hourly.get("relative_humidity_2m"),
             "precipitation_probability": hourly.get("precipitation_probability"),
             "wind_speed": hourly.get("wind_speed_10m"),
             "wind_gusts": hourly.get("wind_gusts_10m"),
@@ -40,6 +41,7 @@ class WeatherService:
             try:
                 local_time = datetime.fromisoformat(timestamp)
                 temperature = _number(fields["temperature"][index])
+                humidity = _number(fields["humidity"][index])
                 rain = _number(fields["precipitation_probability"][index])
                 wind = _number(fields["wind_speed"][index])
                 gusts = _number(fields["wind_gusts"][index])
@@ -49,6 +51,7 @@ class WeatherService:
             forecast = {
                 "time": local_time.strftime("%H:%M"),
                 "temperature_c": temperature,
+                "relative_humidity_percent": humidity,
                 "precipitation_probability_percent": rain,
                 "wind_speed_kmh": wind,
                 "wind_gusts_kmh": gusts,
@@ -75,7 +78,7 @@ class WeatherService:
         penalties = []
         conditions = []
         rain = forecast["precipitation_probability_percent"]
-        wind = forecast["wind_speed_kmh"]
+        wind = max(forecast["wind_speed_kmh"], forecast["wind_gusts_kmh"])
         temperature = forecast["temperature_c"]
 
         if rain >= thresholds.rain_probability_percent:
@@ -93,6 +96,10 @@ class WeatherService:
         elif temperature > thresholds.max_temperature_c:
             conditions.append("Temperatura alta")
             penalties.append(15)
+        humidity = forecast["relative_humidity_percent"]
+        if humidity >= 75:
+            conditions.append("Humedad alta")
+            penalties.append(10)
 
         if not conditions:
             conditions.append("Condiciones favorables")
@@ -104,6 +111,8 @@ class WeatherService:
             rating = "Viento moderado"
         elif temperature < thresholds.min_temperature_c or temperature > thresholds.max_temperature_c:
             rating = "Temperatura poco cómoda"
+        elif humidity >= 75:
+            rating = "Humedad alta"
         else:
             rating = "Favorable"
         return {

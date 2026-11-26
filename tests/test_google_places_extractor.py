@@ -96,6 +96,13 @@ class GooglePlacesExtractorTests(unittest.TestCase):
             {
                 "input": "Padel Barcelona",
                 "includedRegionCodes": ["es"],
+                "includedPrimaryTypes": [
+                    "sports_club",
+                    "sports_complex",
+                    "fitness_center",
+                    "gym",
+                    "sports_school",
+                ],
                 "languageCode": "es",
                 "sessionToken": "session-123",
             },

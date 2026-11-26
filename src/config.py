@@ -17,8 +17,8 @@ class WeatherThresholds:
             moderate_wind_kmh=float(os.getenv("PADEL_MODERATE_WIND_KMH", "15")),
             high_wind_kmh=float(os.getenv("PADEL_HIGH_WIND_KMH", "25")),
             rain_probability_percent=float(os.getenv("PADEL_RAIN_PROBABILITY_PERCENT", "40")),
-            min_temperature_c=float(os.getenv("PADEL_MIN_TEMP_C", "10")),
-            max_temperature_c=float(os.getenv("PADEL_MAX_TEMP_C", "32")),
+            min_temperature_c=float(os.getenv("PADEL_MIN_TEMP_C", "15")),
+            max_temperature_c=float(os.getenv("PADEL_MAX_TEMP_C", "22")),
         )
         values = (
             thresholds.moderate_wind_kmh,

@@ -10,6 +10,7 @@ class FakeWeatherExtractor:
             "hourly": {
                 "time": ["2026-11-07T18:00", "2026-11-07T16:00", "2026-11-07T17:00"],
                 "temperature_2m": [21, 20, 20],
+                "relative_humidity_2m": [55, 55, 55],
                 "precipitation_probability": [65, 5, 5],
                 "wind_speed_10m": [8, 8, 18],
                 "wind_gusts_10m": [12, 12, 25],
@@ -26,7 +27,7 @@ class WeatherServiceTests(unittest.TestCase):
 
         self.assertEqual([item["time"] for item in forecasts], ["16:00", "17:00", "18:00"])
         self.assertEqual(forecasts[0]["rating"], "Favorable")
-        self.assertEqual(forecasts[1]["rating"], "Viento moderado")
+        self.assertEqual(forecasts[1]["rating"], "Viento fuerte")
         self.assertEqual(forecasts[2]["rating"], "Posible lluvia")
 
     def test_indoor_forecasts_are_not_penalized_by_weather(self):

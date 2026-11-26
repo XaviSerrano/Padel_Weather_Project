@@ -1,6 +1,7 @@
 import json
 import math
 import re
+import unicodedata
 from urllib.parse import quote, urlencode
 from urllib.request import Request
 
@@ -19,6 +20,15 @@ GOOGLE_PLACES_AUTOCOMPLETE_FIELD_MASK = (
     "suggestions.placePrediction.structuredFormat.mainText.text,"
     "suggestions.placePrediction.structuredFormat.secondaryText.text"
 )
+# Keep autocomplete focused on sports venues. Google otherwise returns any
+# matching place (shops, streets, restaurants, etc.) for the typed text.
+PADEL_VENUE_PRIMARY_TYPES = [
+    "sports_club",
+    "sports_complex",
+    "fitness_center",
+    "gym",
+    "sports_school",
+]
 GOOGLE_PLACE_DETAILS_FIELD_MASK = "id,displayName,formattedAddress,location"
 
 
@@ -45,7 +55,8 @@ class GooglePlacesExtractor:
         places = payload.get("places", [])
         if not isinstance(places, list):
             raise ExternalServiceError("Google Places devolvió una lista de clubes no válida.")
-        return [self._normalize_place(place) for place in places]
+        normalized_places = [self._normalize_place(place) for place in places]
+        return [place for place in normalized_places if _has_padel_in_name(place["name"])]
 
     def autocomplete(self, query: str, session_token: str | None = None):
         if not isinstance(query, str) or not 3 <= len(query.strip()) <= 200:
@@ -55,6 +66,7 @@ class GooglePlacesExtractor:
         body: dict[str, str | list[str]] = {
             "input": query.strip(),
             "includedRegionCodes": ["es"],
+            "includedPrimaryTypes": PADEL_VENUE_PRIMARY_TYPES,
             "languageCode": "es",
         }
         if session_token:
@@ -114,7 +126,8 @@ class GooglePlacesExtractor:
                 raise ExternalServiceError(
                     "Google Places Autocomplete devolvió una sugerencia incompleta."
                 )
-            results.append({"place_id": place_id, "name": name, "address": address})
+            if _has_padel_in_name(name):
+                results.append({"place_id": place_id, "name": name, "address": address})
         return results
 
     def get_place(self, place_id: str, session_token: str | None = None):
@@ -134,7 +147,10 @@ class GooglePlacesExtractor:
             },
         )
         payload = request_json(request, "Google Places Details", timeout=self.timeout)
-        return self._normalize_place(payload)
+        place = self._normalize_place(payload)
+        if not _has_padel_in_name(place["name"]):
+            raise ValueError("El nombre del lugar debe incluir «padel» o «pádel».")
+        return place
 
     @staticmethod
     def _normalize_place(place):
@@ -181,3 +197,9 @@ def _validate_session_token(session_token: str | None):
         or not re.fullmatch(r"[A-Za-z0-9_-]{1,36}", session_token)
     ):
         raise ValueError("La sesión de sugerencias no es válida.")
+
+
+def _has_padel_in_name(name: str) -> bool:
+    normalized = unicodedata.normalize("NFD", name.casefold())
+    normalized = "".join(char for char in normalized if unicodedata.category(char) != "Mn")
+    return "padel" in normalized

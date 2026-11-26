@@ -17,7 +17,7 @@
 | Tecnología / servicio | Uso | Implementación |
 | --- | --- | --- |
 | Google Places API (New) | Autocompletado, selección verificada y búsqueda de clubes | `src/extract/google_places_extractor.py` utiliza Autocomplete, Place Details y Text Search con FieldMask donde corresponde. La interfaz llama a `/api/clubs/autocomplete` y `/api/clubs/details`; comparte un token UUID de sesión de Autocomplete con Place Details. `GOOGLE_PLACES_API_KEY` solo se lee en el backend. Requiere habilitar los servicios necesarios en Google Cloud y puede tener costes por solicitud. |
-| Open-Meteo Forecast API | Previsión por hora según latitud y longitud | `src/extract/weather_extractor.py` solicita temperatura, probabilidad de precipitación, viento y rachas en la zona horaria del club. |
+| Open-Meteo Forecast API | Previsión por hora según latitud y longitud | `src/extract/weather_extractor.py` solicita temperatura, humedad relativa, probabilidad de precipitación, viento y rachas en la zona horaria del club. |
 | Google Fonts | Tipografías DM Sans y Manrope | Cargadas desde `web/index.html`; requieren conexión externa en el navegador. |
 
 ## Transporte y lógica

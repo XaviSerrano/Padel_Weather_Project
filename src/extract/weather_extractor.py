@@ -8,7 +8,8 @@ from src.extract.http_json import request_json
 
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 HOURLY_VARIABLES = (
-    "temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m"
+    "temperature_2m,relative_humidity_2m,precipitation_probability,"
+    "wind_speed_10m,wind_gusts_10m"
 )
 
 

@@ -42,10 +42,10 @@ Puedes cambiar el puerto con `PORT` y ajustar la valoración meteorológica con 
 | `PADEL_MODERATE_WIND_KMH` | 15 | Umbral de viento moderado |
 | `PADEL_HIGH_WIND_KMH` | 25 | Umbral de viento fuerte |
 | `PADEL_RAIN_PROBABILITY_PERCENT` | 40 | Umbral de posible lluvia |
-| `PADEL_MIN_TEMP_C` | 10 | Temperatura mínima de confort |
-| `PADEL_MAX_TEMP_C` | 32 | Temperatura máxima de confort |
+| `PADEL_MIN_TEMP_C` | 15 | Inicio del rango de temperatura templada |
+| `PADEL_MAX_TEMP_C` | 22 | Fin del rango de temperatura templada |
 
-La API de previsión usa Open-Meteo y devuelve horas locales del club. Los resultados se ordenan por una puntuación orientativa; las pistas indoor no reciben penalizaciones por viento, lluvia o temperatura.
+La API de previsión usa Open-Meteo y devuelve horas locales del club. Los resultados se ordenan por una puntuación orientativa que tiene en cuenta temperatura templada (15–22 °C por defecto), humedad, viento y rachas y probabilidad de lluvia; las pistas indoor no reciben penalizaciones por meteorología exterior.
 
 ## Pruebas y verificaciones
 
@@ -60,7 +60,8 @@ npm run build
 ## Alcance actual
 
 - Búsqueda de clubes con Google Places Text Search.
-- Sugerencias de Google Places Autocomplete al escribir un club o una localidad; seleccionar una sugerencia verifica el lugar antes de consultar su previsión.
+- Sugerencias de Google Places Autocomplete filtradas por instalaciones deportivas y por nombres que incluyan «padel» o «pádel»; la búsqueda manual aplica el mismo filtro.
+- Seleccionar una sugerencia verifica el lugar antes de consultar su previsión.
 - Busca por nombre del club, localidad o ambos (por ejemplo, «Padel Barcelona» o «Club X, Sabadell»). Escribe al menos tres caracteres y selecciona la sugerencia para evitar confundir centros con nombres parecidos.
 - Previsión horaria de siete días con Open-Meteo.
 - Selección manual de una hora de referencia y distinción entre pista indoor y outdoor.
